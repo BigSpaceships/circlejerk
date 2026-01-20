@@ -2,12 +2,15 @@ package main
 
 import (
 	"embed"
+	"log"
 	"net/http"
 	"os"
 
+	"github.com/bigspaceships/circlejerk/auth"
 	"github.com/computersciencehouse/csh-auth"
-	"github.com/gin-contrib/static"
-	"github.com/gin-gonic/gin"
+
+	// "github.com/gin-contrib/static"
+	// "github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
 )
 
@@ -15,8 +18,6 @@ import (
 var server embed.FS
 
 func main() {
-	r := gin.Default()
-
 	err := godotenv.Load()
 
 	if err != nil {
@@ -35,22 +36,31 @@ func main() {
 		[]string{"profile", "groups"},
 	)
 
-	fs, err := static.EmbedFolder(server, "static")
-	if err != nil {
-		panic(err)
+	myAuth := auth.Config{
+		ClientId: os.Getenv("OIDC_CLIENT_ID"),
+		ClientSecret: os.Getenv("OIDC_CLIENT_SECRET"),
+		State: os.Getenv("STATE"),
+		RedirectURI: os.Getenv("HOST")+"/auth/callback",
 	}
 
-	r.GET("/auth/login", csh.AuthRequest)
-	r.GET("/auth/callback", csh.AuthCallback)
-	r.GET("/auth/logout", csh.AuthLogout)
+	myAuth.SetupAuth()
 
-	r.Use(csh.AuthWrapper(static.Serve("/", fs)))
+	http.HandleFunc("/auth/login", myAuth.LoginRequest)
+	http.HandleFunc("/auth/callback", myAuth.LoginCallback)
 
-	r.GET("/api/ping", csh.AuthWrapper(func(c *gin.Context) {
-		c.JSON(http.StatusOK, gin.H{
-			"message": "pong",
-		})
-	}))
+	// fs, err := static.EmbedFolder(server, "static")
+	// if err != nil {
+	// 	panic(err)
+	// }
 
-	r.Run()
+
+	// r.Use(csh.AuthWrapper(static.Serve("/", fs)))
+
+	// r.GET("/api/ping", csh.AuthWrapper(func(c *gin.Context) {
+	// 	c.JSON(http.StatusOK, gin.H{
+	// 		"message": "pong",
+	// 	})
+	// }))
+
+	log.Fatal(http.ListenAndServe(":8080", nil))
 }
