@@ -2,7 +2,7 @@ package auth
 
 import (
 	"context"
-	"fmt"
+	"errors"
 	"time"
 
 	"log"
@@ -18,6 +18,7 @@ type Config struct {
 	ClientSecret string
 	JwtSecret    string
 	State        string
+	AuthURI      string
 	RedirectURI  string
 	Issuer       string
 }
@@ -55,12 +56,36 @@ func (auth *Config) SetupAuth() {
 	}
 }
 
-func Status(w http.ResponseWriter, r *http.Request) {
-	cookie, err := r.Cookie("Auth")
+func (auth *Config) Handler(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		cookie, err := r.Cookie("Auth")
 
-	fmt.Printf("%s, %s\n", cookie, err)
+		if err != nil || cookie.Value == "" {
+			// log.Println("cookie not found")
+			http.Redirect(w, r, auth.AuthURI, http.StatusFound)
+			return
+		}
 
-	fmt.Fprintf(w, "hii")
+		token, err := jwt.ParseWithClaims(cookie.Value, &AuthClaims{}, func(token *jwt.Token) (interface{}, error) {
+			if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+				return nil, errors.New("unexpected signing method")
+			}
+			return []byte(auth.JwtSecret), nil
+		})
+
+		if err != nil {
+			log.Println("token failure")
+			return
+		}
+
+		if claims, ok := token.Claims.(*AuthClaims); ok && token.Valid {
+			log.Printf("%s\n", claims.UserInfo)
+
+			newCtx := context.WithValue(r.Context(), "UserClaims", claims.UserInfo)
+
+			next.ServeHTTP(w, r.WithContext(newCtx))
+		}
+	})
 }
 
 func (auth *Config) LoginRequest(w http.ResponseWriter, r *http.Request) {
@@ -101,17 +126,13 @@ func (auth *Config) LoginCallback(w http.ResponseWriter, r *http.Request) {
 	signedToken, err := token.SignedString([]byte(auth.JwtSecret))
 
 	cookie := &http.Cookie{
-		Name: "Auth",
-		Value: signedToken,
+		Name:   "Auth",
+		Value:  signedToken,
 		MaxAge: expireCookie,
-		Path: "/",
+		Path:   "/",
 	}
 
 	http.SetCookie(w, cookie)
 
 	w.WriteHeader(http.StatusOK)
-
-	// json_data, err := json.MarshalIndent(jsonRaw, "", "    ")
-
-	// log.Println(string(jsonRaw))
 }

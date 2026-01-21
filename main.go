@@ -2,6 +2,7 @@ package main
 
 import (
 	"embed"
+	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -16,6 +17,10 @@ import (
 //go:embed static
 var server embed.FS
 
+func ping(w http.ResponseWriter, r *http.Request) {
+	fmt.Fprintf(w, "%s\n", r.Context().Value("UserClaims"))
+}
+
 func main() {
 	err := godotenv.Load()
 
@@ -23,23 +28,12 @@ func main() {
 		panic("Error loading .env file")
 	}
 
-	// csh := csh_auth.CSHAuth{}
-	// csh.Init(
-	// 	os.Getenv("OIDC_CLIENT_ID"),
-	// 	os.Getenv("OIDC_CLIENT_SECRET"),
-	// 	os.Getenv("JWT_SECRET"),
-	// 	os.Getenv("STATE"),
-	// 	os.Getenv("HOST"),
-	// 	os.Getenv("HOST")+"/auth/callback",
-	// 	os.Getenv("HOST")+"/auth/login",
-	// 	[]string{"profile", "groups"},
-	// )
-
 	myAuth := auth.Config{
 		ClientId: os.Getenv("OIDC_CLIENT_ID"),
 		ClientSecret: os.Getenv("OIDC_CLIENT_SECRET"),
 		State: os.Getenv("STATE"),
 		RedirectURI: os.Getenv("HOST")+"/auth/callback",
+		AuthURI: os.Getenv("HOST")+"/auth/login",
 		Issuer: os.Getenv("ISSUER"),
 	}
 
@@ -50,9 +44,9 @@ func main() {
 	http.HandleFunc("/auth/login", myAuth.LoginRequest)
 	http.HandleFunc("/auth/callback", myAuth.LoginCallback)
 
-	http.HandleFunc("/test", auth.Status)
+	http.Handle("/api/ping", myAuth.Handler(http.HandlerFunc(ping)))
 
-	http.Handle("/", fs)
+	http.Handle("/", myAuth.Handler(fs))
 
 	log.Fatal(http.ListenAndServe(":8080", nil))
 }
