@@ -8,6 +8,7 @@ import (
 	"os"
 
 	"github.com/bigspaceships/circlejerk/auth"
+	"github.com/bigspaceships/circlejerk/queue"
 
 	"github.com/joho/godotenv"
 )
@@ -17,7 +18,7 @@ import (
 // var server embed.FS
 
 func ping(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintf(w, "%s\n", r.Context().Value("UserClaims"))
+	fmt.Fprintf(w, "%s\n", auth.GetUserClaims(r))
 }
 
 func main() {
@@ -36,6 +37,8 @@ func main() {
 		Issuer: os.Getenv("ISSUER"),
 	}
 
+	queue.SetupQueue()
+
 	cshAuth.SetupAuth()
 
 	fs := http.FileServer(http.Dir("./static"))
@@ -45,7 +48,9 @@ func main() {
 
 	apiMux := http.NewServeMux()
 
-	apiMux.HandleFunc("/ping", ping)
+	apiMux.HandleFunc("GET /ping", ping)
+	apiMux.HandleFunc("POST /enter", queue.JoinQueue)
+	apiMux.HandleFunc("GET /queue", queue.GetQueue)
 
 	http.Handle("/api/", http.StripPrefix("/api", cshAuth.Handler(apiMux)))
 

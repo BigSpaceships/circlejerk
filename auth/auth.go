@@ -56,6 +56,10 @@ func (auth *Config) SetupAuth() {
 	}
 }
 
+func GetUserClaims(r *http.Request) UserInfo {
+	return r.Context().Value("UserInfo").(UserInfo)
+}
+
 func (auth *Config) Handler(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		cookie, err := r.Cookie("Auth")
@@ -81,7 +85,7 @@ func (auth *Config) Handler(next http.Handler) http.Handler {
 		if claims, ok := token.Claims.(*AuthClaims); ok && token.Valid {
 			log.Printf("%s\n", claims.UserInfo)
 
-			newCtx := context.WithValue(r.Context(), "UserClaims", claims.UserInfo)
+			newCtx := context.WithValue(r.Context(), "UserInfo", claims.UserInfo)
 
 			next.ServeHTTP(w, r.WithContext(newCtx))
 		}
