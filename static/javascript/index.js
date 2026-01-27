@@ -98,25 +98,34 @@ function addEntryToQueue(type, queueEntry) {
   } else if (type == "point") {
     listElement.appendChild(getListNodeForQueueEntry(queueEntry));
   } else {
-    console.error("unknown type: " + type)
+    console.error("unknown type: " + type);
   }
 }
 
-async function main() {
-  joinWebsocket()
+async function rebuildQueue() {
+  let queue = await getQueue();
 
-  userInfo = await getUserInfo()
-  updateUserInfo(userInfo)
-
-  let queue = await getQueue()
+  const listElement = document.querySelector("ul.list-group");
+  Array.from(listElement.children).filter((el) => !el.classList.contains("clarifier-spacer")).forEach((el) => {
+    el.remove();
+  })
 
   queue.clarifiers.forEach((queueEntry) => {
-    addEntryToQueue('clarifier', queueEntry)
+    addEntryToQueue('clarifier', queueEntry);
   })
 
   queue.points.forEach((queueEntry) => {
-    addEntryToQueue('point', queueEntry)
+    addEntryToQueue('point', queueEntry);
   })
+}
+
+async function main() {
+  joinWebsocket();
+
+  userInfo = await getUserInfo();
+  updateUserInfo(userInfo);
+
+  await rebuildQueue();
 }
 
 main()
