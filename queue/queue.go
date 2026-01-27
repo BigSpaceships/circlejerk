@@ -19,26 +19,32 @@ type QueueRequestData struct {
 	Type string `json:"type"`
 }
 
-var queue []QueueEntry
-
-func SetupQueue() {
-	queue = make([]QueueEntry, 0)
+type Queue struct {
+	Entries  []QueueEntry
+	wsServer *dq_websocket.WsServer
 }
 
-func LeaveQueue(w http.ResponseWriter, r *http.Request) {
+func SetupQueue(wsServer *dq_websocket.WsServer) *Queue {
+	return &Queue{
+		Entries:  make([]QueueEntry, 0),
+		wsServer: wsServer,
+	}
+}
+
+func (queue *Queue) LeaveQueue(w http.ResponseWriter, r *http.Request) {
 	userInfo := auth.GetUserClaims(r)
 
 	requestData := QueueRequestData{}
 	json.NewDecoder(r.Body).Decode(&requestData)
 
-	indexOfEntry := slices.IndexFunc(queue, func(slice QueueEntry) bool {
+	indexOfEntry := slices.IndexFunc(queue.Entries, func(slice QueueEntry) bool {
 		return slice.Username == userInfo.Username && slice.Type == requestData.Type
 	})
 
-	queue = slices.Concat(queue[:indexOfEntry], queue[(indexOfEntry+1):])
+	queue.Entries = slices.Concat(queue.Entries[:indexOfEntry], queue.Entries[(indexOfEntry+1):])
 }
 
-func JoinQueue(w http.ResponseWriter, r *http.Request) {
+func (queue *Queue) JoinQueue(w http.ResponseWriter, r *http.Request) {
 	userInfo := auth.GetUserClaims(r)
 
 	requestData := QueueRequestData{}
@@ -50,21 +56,21 @@ func JoinQueue(w http.ResponseWriter, r *http.Request) {
 		Type:     requestData.Type,
 	}
 
-	queue = append(queue, newEntry)
+	queue.Entries = append(queue.Entries, newEntry)
 
 	w.WriteHeader(http.StatusOK)
 
-	dq_websocket.SendWSMessage(struct {
-		Type        string     `json:"type"`
+	queue.wsServer.SendWSMessage(struct {
+		Type string     `json:"type"`
 		Data QueueEntry `json:"data"`
 	}{
-		Type:        "new-point",
+		Type: "new-point",
 		Data: newEntry,
 	})
 }
 
-func GetQueue(w http.ResponseWriter, r *http.Request) {
+func (queue *Queue) GetQueue(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
-	json.NewEncoder(w).Encode(queue)
+	json.NewEncoder(w).Encode(queue.Entries)
 }

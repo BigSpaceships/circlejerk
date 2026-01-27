@@ -19,12 +19,13 @@ type WsServer struct {
 	clients map[WebsocketSubscriber]struct{}
 }
 
-var wsServer = WsServer{
-	clients: make(map[WebsocketSubscriber]struct{}),
+func CreateWSServer() *WsServer {
+	return &WsServer{
+		clients: make(map[WebsocketSubscriber]struct{}),
+	}
 }
 
 func (server *WsServer) AddListener(w http.ResponseWriter, r *http.Request) {
-
 	c, err := websocket.Accept(w, r, nil)
 
 	if err != nil {
@@ -41,7 +42,7 @@ func (server *WsServer) AddListener(w http.ResponseWriter, r *http.Request) {
 
 	log.Printf("adding web socket listerer\n")
 	server.clients[wsSubscriber] = struct{}{}
-	defer wsServer.RemoveListener(wsSubscriber)
+	defer server.RemoveListener(wsSubscriber)
 
 	ctx := c.CloseRead(context.Background())
 
@@ -65,14 +66,14 @@ func (server *WsServer) RemoveListener(ws WebsocketSubscriber) {
 	delete(server.clients, ws)
 }
 
-func WebsocketConnect(w http.ResponseWriter, r *http.Request) {
-	wsServer.AddListener(w, r)
+func (server *WsServer) WebsocketConnect(w http.ResponseWriter, r *http.Request) {
+	server.AddListener(w, r)
 }
 
-func SendWSMessage(msg any) {
+func (server *WsServer) SendWSMessage(msg any) {
 	json, _ := json.Marshal(msg)
 	log.Printf("%s\n", json)
-	for client := range wsServer.clients {
+	for client := range server.clients {
 		client.msgs <- msg
 	}
 }

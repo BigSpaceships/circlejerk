@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strings"
 
 	"github.com/bigspaceships/circlejerk/auth"
 	"github.com/bigspaceships/circlejerk/queue"
@@ -45,7 +46,8 @@ func main() {
 		port = "8080"
 	}
 
-	queue.SetupQueue()
+	ws_server := dq_websocket.CreateWSServer()
+	queue := queue.SetupQueue(ws_server)
 
 	cshAuth.SetupAuth()
 
@@ -60,7 +62,7 @@ func main() {
 	apiMux.HandleFunc("POST /enter", queue.JoinQueue)
 	apiMux.HandleFunc("POST /leave", queue.LeaveQueue)
 	apiMux.HandleFunc("GET /queue", queue.GetQueue)
-	apiMux.HandleFunc("/join_ws", dq_websocket.WebsocketConnect)
+	apiMux.HandleFunc("/join_ws", ws_server.WebsocketConnect)
 
 	http.Handle("/api/", http.StripPrefix("/api", cshAuth.Handler(apiMux)))
 
