@@ -36,10 +36,13 @@ function joinWebsocket() {
 
     switch (eventData.type) {
       case "point":
-        addEntryToQueue("point", eventData.data)
+        addEntryToQueue("point", eventData.data);
         break;
       case "clarifier":
-        addEntryToQueue("clarifier", eventData.data)
+        addEntryToQueue("clarifier", eventData.data);
+        break;
+      case "delete":
+        removeEntryFromQueue(eventData.id, eventData.dismisser);
         break;
     }
   });
@@ -116,6 +119,15 @@ function addEntryToQueue(type, queueEntry) {
   } else {
     console.error("unknown type: " + type);
   }
+}
+
+function removeEntryFromQueue(id, dismisser) {
+  const listElement = document.querySelector("ul.list-group");
+  Array.from(listElement.children).filter((el) => el.dataset.id == id).forEach((el) => {
+    el.remove();
+  })
+
+  console.log(`${dismisser} dismissed point ${id}`);
 }
 
 async function rebuildQueue() {

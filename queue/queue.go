@@ -62,6 +62,16 @@ func (queue *Queue) DeletePoint(w http.ResponseWriter, r *http.Request) {
 	if queue.Points == nil {
 		queue.Points = make([]QueueEntry, 0)
 	}
+
+	queue.wsServer.SendWSMessage(struct {
+		Type      string `json:"type"`
+		Id        int    `json:"id"`
+		Dismisser string `json:"dismisser"`
+	}{
+		Type:      "delete",
+		Id:        id,
+		Dismisser: userInfo.Name,
+	})
 }
 
 func (queue *Queue) DeleteClarifier(w http.ResponseWriter, r *http.Request) {
@@ -89,20 +99,17 @@ func (queue *Queue) DeleteClarifier(w http.ResponseWriter, r *http.Request) {
 	if queue.Clarifiers == nil {
 		queue.Clarifiers = make([]QueueEntry, 0)
 	}
-}
 
-// func (queue *Queue) LeaveQueue(w http.ResponseWriter, r *http.Request) {
-// 	userInfo := auth.GetUserClaims(r)
-//
-// 	requestData := QueueRequestData{}
-// 	json.NewDecoder(r.Body).Decode(&requestData)
-//
-// 	indexOfEntry := slices.IndexFunc(queue.Entries, func(slice QueueEntry) bool {
-// 		return slice.Username == userInfo.Username && slice.Type == requestData.Type
-// 	})
-//
-// 	queue.Entries = slices.Concat(queue.Entries[:indexOfEntry], queue.Entries[(indexOfEntry+1):])
-// }
+	queue.wsServer.SendWSMessage(struct {
+		Type      string `json:"type"`
+		Id        int    `json:"id"`
+		Dismisser string `json:"dismisser"`
+	}{
+		Type:      "delete",
+		Id:        id,
+		Dismisser: userInfo.Name,
+	})
+}
 
 func (queue *Queue) NewClarifier(w http.ResponseWriter, r *http.Request) {
 	userInfo := auth.GetUserClaims(r)
