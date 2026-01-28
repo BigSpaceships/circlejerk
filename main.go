@@ -31,13 +31,27 @@ func main() {
 	}
 
 	cshAuth := auth.Config{
-		ClientId:     os.Getenv("OIDC_CLIENT_ID"),
-		ClientSecret: os.Getenv("OIDC_CLIENT_SECRET"),
+		ClientId:     os.Getenv("CSH_OIDC_CLIENT_ID"),
+		ClientSecret: os.Getenv("CSH_OIDC_CLIENT_SECRET"),
+		Issuer:       os.Getenv("CSH_ISSUER"),
+		IssuerShort:  "csh",
 		State:        os.Getenv("STATE"),
 		RedirectURI:  os.Getenv("HOST") + "/auth/callback-csh",
 		AuthURI:      os.Getenv("HOST") + "/auth/login-csh",
-		Issuer:       os.Getenv("ISSUER"),
 	}
+
+	googleAuth := auth.Config{
+		ClientId:     os.Getenv("GOOGLE_OIDC_CLIENT_ID"),
+		ClientSecret: os.Getenv("GOOGLE_OIDC_CLIENT_SECRET"),
+		Issuer:       os.Getenv("GOOGLE_ISSUER"),
+		IssuerShort:  "google",
+		State:        os.Getenv("STATE"),
+		RedirectURI:  os.Getenv("HOST") + "/auth/callback-google",
+		AuthURI:      os.Getenv("HOST") + "/auth/login-google",
+	}
+
+	cshAuth.SetupAuth()
+	googleAuth.SetupAuth()
 
 	port := os.Getenv("PORT")
 
@@ -48,12 +62,13 @@ func main() {
 	ws_server := dq_websocket.CreateWSServer()
 	queue := queue.SetupQueue(ws_server)
 
-	cshAuth.SetupAuth()
-
 	fs := http.FileServer(http.Dir("./static"))
 
 	http.HandleFunc("/auth/login-csh", cshAuth.LoginRequest)
 	http.HandleFunc("/auth/callback-csh", cshAuth.LoginCallback)
+
+	http.HandleFunc("/auth/login-google", googleAuth.LoginRequest)
+	http.HandleFunc("/auth/callback-google", googleAuth.LoginCallback)
 
 	apiMux := http.NewServeMux()
 
@@ -65,7 +80,7 @@ func main() {
 	apiMux.HandleFunc("GET /queue", queue.GetQueue)
 	apiMux.HandleFunc("/join_ws", ws_server.WebsocketConnect)
 
-	http.Handle("/api/", http.StripPrefix("/api", cshAuth.Handler(apiMux)))
+	http.Handle("/api/", http.StripPrefix("/api", googleAuth.Handler(apiMux)))
 
 	http.Handle("/auth", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		http.ServeFile(w, r, "static/auth.html")

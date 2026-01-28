@@ -3,7 +3,9 @@ package auth
 import (
 	"context"
 	"errors"
+	"fmt"
 	"slices"
+	"strings"
 	"time"
 
 	"log"
@@ -15,6 +17,7 @@ import (
 )
 
 type Config struct {
+	IssuerShort  string
 	ClientId     string
 	ClientSecret string
 	JwtSecret    string
@@ -37,6 +40,9 @@ type UserInfo struct {
 	Username string   `json:"preferred_username"`
 	IsEboard bool     `json:"is_eboard"`
 	Groups   []string `json:"groups"`
+	Issuer   string   `json:"issuer"`
+	Picture  string   `json:"picture"`
+	Email    string   `json:"email"`
 }
 
 var ctx = context.Background()
@@ -107,6 +113,8 @@ func (auth *Config) LoginCallback(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Bad state", http.StatusBadRequest)
 	}
 
+	issuer := auth.IssuerShort
+
 	oauthToken, err := auth.oauthConfig.Exchange(ctx, r.URL.Query().Get("code"))
 
 	if err != nil {
@@ -118,6 +126,13 @@ func (auth *Config) LoginCallback(w http.ResponseWriter, r *http.Request) {
 
 	userInfo := &UserInfo{}
 	oidcUserInfo.Claims(userInfo)
+
+	switch issuer {
+	case "google":
+		userInfo.Username = strings.Split(userInfo.Email, "@")[0]
+	case "csh":
+		userInfo.Picture = fmt.Sprintf("https://profiles.csh.rit.edu/image/%s", userInfo.Username)
+	}
 
 	userInfo.IsEboard = slices.Contains(userInfo.Groups, "eboard")
 

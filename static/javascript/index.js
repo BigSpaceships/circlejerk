@@ -83,9 +83,9 @@ async function getUserInfo() {
 
 function updateUserInfo(userInfo) {
   window.userInfo = userInfo;
-  const username = userInfo.preferred_username;
   const name = userInfo.name;
-  document.getElementById("profile-pic").src = `https://profiles.csh.rit.edu/image/${username}`;
+  const profileUrl = userInfo.picture;
+  document.getElementById("profile-pic").src = profileUrl;
   document.getElementById("profile-name").innerText = name;
 }
 
