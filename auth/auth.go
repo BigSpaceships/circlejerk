@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
 	"slices"
 	"strings"
 	"time"
@@ -20,7 +21,6 @@ type Config struct {
 	IssuerShort  string
 	ClientId     string
 	ClientSecret string
-	JwtSecret    string
 	State        string
 	AuthURI      string
 	RedirectURI  string
@@ -47,6 +47,9 @@ type UserInfo struct {
 
 var ctx = context.Background()
 
+var authmap = make(map[string]*Config)
+var jwtSecret = os.Getenv("JWT_SECRET")
+
 func (auth *Config) SetupAuth() {
 	provider, err := oidc.NewProvider(ctx, auth.Issuer)
 
@@ -64,19 +67,21 @@ func (auth *Config) SetupAuth() {
 
 	auth.provider = provider
 	auth.oauthConfig = oauthConfig
+
+	authmap[auth.IssuerShort] = auth
 }
 
 func GetUserClaims(r *http.Request) UserInfo {
 	return r.Context().Value("UserInfo").(UserInfo)
 }
 
-func (auth *Config) Handler(next http.Handler) http.Handler {
+func Handler(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		cookie, err := r.Cookie("Auth")
 
 		if err != nil || cookie.Value == "" {
 			// log.Println("cookie not found")
-			http.Redirect(w, r, auth.AuthURI, http.StatusFound)
+			http.Redirect(w, r, "auth", http.StatusFound)
 			return
 		}
 
@@ -84,7 +89,7 @@ func (auth *Config) Handler(next http.Handler) http.Handler {
 			if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 				return nil, errors.New("unexpected signing method")
 			}
-			return []byte(auth.JwtSecret), nil
+			return []byte(jwtSecret), nil
 		})
 
 		if err != nil {
@@ -93,8 +98,6 @@ func (auth *Config) Handler(next http.Handler) http.Handler {
 		}
 
 		if claims, ok := token.Claims.(*AuthClaims); ok && token.Valid {
-			log.Printf("%s\n", claims.UserInfo)
-
 			newCtx := context.WithValue(r.Context(), "UserInfo", claims.UserInfo)
 
 			next.ServeHTTP(w, r.WithContext(newCtx))
@@ -148,7 +151,7 @@ func (auth *Config) LoginCallback(w http.ResponseWriter, r *http.Request) {
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	signedToken, err := token.SignedString([]byte(auth.JwtSecret))
+	signedToken, err := token.SignedString([]byte(jwtSecret))
 
 	cookie := &http.Cookie{
 		Name:   "Auth",

@@ -80,7 +80,7 @@ func main() {
 	apiMux.HandleFunc("GET /queue", queue.GetQueue)
 	apiMux.HandleFunc("/join_ws", ws_server.WebsocketConnect)
 
-	http.Handle("/api/", http.StripPrefix("/api", googleAuth.Handler(apiMux)))
+	http.Handle("/api/", http.StripPrefix("/api", auth.Handler(apiMux)))
 
 	http.Handle("/auth", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		http.ServeFile(w, r, "static/auth.html")
