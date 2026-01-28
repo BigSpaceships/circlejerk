@@ -22,6 +22,8 @@ type Config struct {
 	AuthURI      string
 	RedirectURI  string
 	Issuer       string
+	oauthConfig  oauth2.Config
+	provider     *oidc.Provider
 }
 
 type AuthClaims struct {
@@ -37,25 +39,25 @@ type UserInfo struct {
 	Groups   []string `json:"groups"`
 }
 
-var oauthConfig oauth2.Config
 var ctx = context.Background()
-var provider *oidc.Provider
 
 func (auth *Config) SetupAuth() {
-	var err error
-	provider, err = oidc.NewProvider(ctx, auth.Issuer)
+	provider, err := oidc.NewProvider(ctx, auth.Issuer)
 
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	oauthConfig = oauth2.Config{
+	oauthConfig := oauth2.Config{
 		ClientID:     auth.ClientId,
 		ClientSecret: auth.ClientSecret,
 		Endpoint:     provider.Endpoint(),
 		RedirectURL:  auth.RedirectURI,
 		Scopes:       []string{oidc.ScopeOpenID, "profile", "email"},
 	}
+
+	auth.provider = provider
+	auth.oauthConfig = oauthConfig
 }
 
 func GetUserClaims(r *http.Request) UserInfo {
@@ -95,7 +97,7 @@ func (auth *Config) Handler(next http.Handler) http.Handler {
 }
 
 func (auth *Config) LoginRequest(w http.ResponseWriter, r *http.Request) {
-	http.Redirect(w, r, oauthConfig.AuthCodeURL(auth.State), http.StatusFound)
+	http.Redirect(w, r, auth.oauthConfig.AuthCodeURL(auth.State), http.StatusFound)
 }
 
 func (auth *Config) LoginCallback(w http.ResponseWriter, r *http.Request) {
@@ -105,20 +107,19 @@ func (auth *Config) LoginCallback(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Bad state", http.StatusBadRequest)
 	}
 
-	oauthToken, err := oauthConfig.Exchange(ctx, r.URL.Query().Get("code"))
+	oauthToken, err := auth.oauthConfig.Exchange(ctx, r.URL.Query().Get("code"))
 
 	if err != nil {
 		http.Error(w, "Failed to exchange token: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	oidcUserInfo, err := provider.UserInfo(ctx, oauth2.StaticTokenSource(oauthToken))
+	oidcUserInfo, err := auth.provider.UserInfo(ctx, oauth2.StaticTokenSource(oauthToken))
 
 	userInfo := &UserInfo{}
 	oidcUserInfo.Claims(userInfo)
 
 	userInfo.IsEboard = slices.Contains(userInfo.Groups, "eboard")
-	log.Printf("%s\n", userInfo)
 
 	expireToken := time.Now().Add(time.Hour * 1).Unix()
 	expireCookie := 3600
@@ -143,6 +144,6 @@ func (auth *Config) LoginCallback(w http.ResponseWriter, r *http.Request) {
 
 	http.SetCookie(w, cookie)
 
-	// TODO: enable this to redirect to whatever route they tried to access
+	// TODO: enable this to redirect to whatever route they tried to access, do I even need to do this?
 	http.Redirect(w, r, "/", http.StatusFound)
 }

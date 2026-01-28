@@ -31,12 +31,12 @@ func main() {
 	}
 
 	cshAuth := auth.Config{
-		ClientId: os.Getenv("OIDC_CLIENT_ID"),
+		ClientId:     os.Getenv("OIDC_CLIENT_ID"),
 		ClientSecret: os.Getenv("OIDC_CLIENT_SECRET"),
-		State: os.Getenv("STATE"),
-		RedirectURI: os.Getenv("HOST")+"/auth/callback",
-		AuthURI: os.Getenv("HOST")+"/auth/login",
-		Issuer: os.Getenv("ISSUER"),
+		State:        os.Getenv("STATE"),
+		RedirectURI:  os.Getenv("HOST") + "/auth/callback-csh",
+		AuthURI:      os.Getenv("HOST") + "/auth/login-csh",
+		Issuer:       os.Getenv("ISSUER"),
 	}
 
 	port := os.Getenv("PORT")
@@ -52,8 +52,8 @@ func main() {
 
 	fs := http.FileServer(http.Dir("./static"))
 
-	http.HandleFunc("/auth/login", cshAuth.LoginRequest)
-	http.HandleFunc("/auth/callback", cshAuth.LoginCallback)
+	http.HandleFunc("/auth/login-csh", cshAuth.LoginRequest)
+	http.HandleFunc("/auth/callback-csh", cshAuth.LoginCallback)
 
 	apiMux := http.NewServeMux()
 
@@ -67,7 +67,23 @@ func main() {
 
 	http.Handle("/api/", http.StripPrefix("/api", cshAuth.Handler(apiMux)))
 
-	http.Handle("/", cshAuth.Handler(fs))
+	http.Handle("/auth", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		http.ServeFile(w, r, "static/auth.html")
+	}))
+
+	http.Handle("/auth/logout", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		cookie := &http.Cookie{
+			Name:   "Auth",
+			Value:  "",
+			MaxAge: -1,
+			Path:   "/",
+		}
+
+		http.SetCookie(w, cookie)
+		http.Redirect(w, r, "/auth", http.StatusFound)
+	}))
+
+	http.Handle("/", fs)
 
 	log.Printf("Dairy Queue started on port %s\n", port)
 	log.Fatal(http.ListenAndServe(":"+port, nil))

@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <title>Login</title>
+  <link rel="stylesheet" href="https://s3.csh.rit.edu/csh-material-bootstrap/4.6.2/dist/csh-material-bootstrap.min.css"
+    media="screen">
+
+  <style>
+    img {
+      aspect-ratio: 1;
+    }
+
+    img:hover {
+      animation: 0.85s ease-in-out spin;
+    }
+
+    @keyframes spin {
+      from {
+        transform: rotate(0deg);
+      }
+
+      to {
+        transform: rotate(360deg);
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+    <div class="container">
+      <a class="navbar-brand" href="/">Dairy Queen 🍦</a>
+    </div>
+  </nav>
+
+  <div class="container main p-5 row mx-auto">
+    <div class="col-sm-6">
+      <div class="card">
+        <div class="card-header text-center pt-4">
+          <a class="text-decoration-none text-primary" href="auth/login-csh">
+            <h2>
+              CSH
+            </h2>
+          </a>
+        </div>
+        <div class="card-body text-center mt-3 mb-4">
+          <a href="auth/login-csh">
+            <img class="w-50 img-fluid" src="/assets/csh.png" />
+          </a>
+        </div>
+      </div>
+    </div>
+    <div class="col-sm-6">
+      <div class="card">
+        <div class="card-header text-center pt-4">
+          <a class="text-decoration-none text-primary" href="auth/login-google">
+            <h2>
+              Google
+            </h2>
+          </a>
+        </div>
+        <div class="card-body text-center mt-3 mb-4">
+          <a href="auth/login-csh">
+            <img class="w-50 img-fluid" src="/assets/google.png" />
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+
+</html>

@@ -164,10 +164,14 @@ async function rebuildQueue() {
 }
 
 async function main() {
-  joinWebsocket();
-
+  try {
   userInfo = await getUserInfo();
   updateUserInfo(userInfo);
+  } catch {
+    window.location.replace(window.location.origin + "/auth")
+  }
+
+  joinWebsocket();
 
   await rebuildQueue();
 }
