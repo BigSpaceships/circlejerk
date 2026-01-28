@@ -50,8 +50,11 @@ var ctx = context.Background()
 var authmap = make(map[string]*Config)
 var jwtSecret = os.Getenv("JWT_SECRET")
 
+var nonEboardAdmins []string
+
 func (auth *Config) SetupAuth() {
 	provider, err := oidc.NewProvider(ctx, auth.Issuer)
+	nonEboardAdmins = strings.Split(os.Getenv("NON_EBOARD_ADMINS"), ",")
 
 	if err != nil {
 		log.Fatal(err)
@@ -137,7 +140,7 @@ func (auth *Config) LoginCallback(w http.ResponseWriter, r *http.Request) {
 		userInfo.Picture = fmt.Sprintf("https://profiles.csh.rit.edu/image/%s", userInfo.Username)
 	}
 
-	userInfo.IsEboard = slices.Contains(userInfo.Groups, "eboard") || userInfo.Username == "spaced"
+	userInfo.IsEboard = slices.Contains(userInfo.Groups, "eboard") || slices.Contains(nonEboardAdmins, userInfo.Username)
 
 	expireToken := time.Now().Add(time.Hour * 1).Unix()
 	expireCookie := 3600
