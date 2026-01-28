@@ -24,6 +24,7 @@ type QueueRequestData struct {
 type Queue struct {
 	Points     []QueueEntry `json:"points"`
 	Clarifiers []QueueEntry `json:"clarifiers"`
+	Topic      string       `json:"topic"`
 	wsServer   *dq_websocket.WsServer
 	pointCount int
 }
@@ -32,6 +33,7 @@ func SetupQueue(wsServer *dq_websocket.WsServer) *Queue {
 	return &Queue{
 		Points:     make([]QueueEntry, 0),
 		Clarifiers: make([]QueueEntry, 0),
+		Topic:      "Big long discussion",
 		wsServer:   wsServer,
 		pointCount: 0,
 	}
@@ -165,6 +167,38 @@ func (queue *Queue) NewPoint(w http.ResponseWriter, r *http.Request) {
 		Type: "point",
 		Data: newEntry,
 	})
+}
+
+func (queue *Queue) ChangeTopic(w http.ResponseWriter, r *http.Request) {
+	userInfo := auth.GetUserClaims(r)
+
+	if !userInfo.IsEboard {
+		http.Error(w, "user is not on eboard", http.StatusForbidden)
+		return
+	}
+
+	requestData := struct {
+		NewTopic string `json:"new-topic"`
+	}{}
+
+	err := json.NewDecoder(r.Body).Decode(&requestData)
+
+	if err != nil {
+		http.Error(w, "Error decoding body:"+err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	queue.Topic = requestData.NewTopic
+
+	queue.wsServer.SendWSMessage(struct {
+		Type  string `json:"type"`
+		Topic string `json:"topic"`
+	}{
+		Type:  "topic",
+		Topic: requestData.NewTopic,
+	})
+
+	w.WriteHeader(http.StatusOK)
 }
 
 func (queue *Queue) GetQueue(w http.ResponseWriter, r *http.Request) {

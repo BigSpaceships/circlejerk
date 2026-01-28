@@ -77,6 +77,7 @@ func main() {
 	apiMux.HandleFunc("POST /clarifier", queue.NewClarifier)
 	apiMux.HandleFunc("DELETE /point/{id}", queue.DeletePoint)
 	apiMux.HandleFunc("DELETE /clarifier/{id}", queue.DeleteClarifier)
+	apiMux.HandleFunc("POST /change-topic", queue.ChangeTopic)
 	apiMux.HandleFunc("GET /queue", queue.GetQueue)
 	apiMux.HandleFunc("/join_ws", ws_server.WebsocketConnect)
 

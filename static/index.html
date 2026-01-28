@@ -6,6 +6,16 @@
   <link rel="stylesheet" href="https://s3.csh.rit.edu/csh-material-bootstrap/4.6.2/dist/csh-material-bootstrap.min.css"
     media="screen">
   <script src="https://kit.fontawesome.com/ef45124833.js" crossorigin="anonymous"></script>
+
+  <style>
+    input.discussion-title {
+      background-color: transparent;
+      border: none;
+      color: inherit;
+
+      font-weight: inherit;
+    }
+  </style>
 </head>
 
 <body>
@@ -25,7 +35,9 @@
   <div class="container main p-5">
     <div class="card">
       <div class="card-header d-flex flex-row align-items-center">
-        <h2 class="m-0">Big long discussion in SWEN-261</h2>
+        <h2 class="m-0">
+          <input class="discussion-title" value="AGH" onchange="changeTopic(event)" />
+        </h2>
         <a href="#" class="ml-auto" onclick="rebuildQueue(); return false">
           <i class="fa-solid fa-arrows-rotate text-muted"></i>
         </a>

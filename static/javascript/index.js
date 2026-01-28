@@ -26,6 +26,15 @@ function leaveQueue(type, id) {
   });
 }
 
+function changeTopic(event) {
+  fetch(`${window.location.origin}/api/change-topic`, {
+    method: "POST",
+    body: JSON.stringify({
+      "new-topic": event.target.value
+    }),
+  })
+}
+
 function joinWebsocket(retryCount = 0) {
   const isSecure = window.location.protocol == "https:";
   const protocol = isSecure ? "wss" : "ws";
@@ -43,6 +52,10 @@ function joinWebsocket(retryCount = 0) {
         break;
       case "delete":
         removeEntryFromQueue(eventData.id, eventData.dismisser);
+        break;
+      case "topic":
+        console.log(event);
+        setTopic(eventData.topic);
         break;
     }
   });
@@ -78,15 +91,26 @@ function parseJwt(token) {
 async function getUserInfo() {
   const cookie = await cookieStore.get("Auth");
 
-  return parseJwt(cookie.value).UserInfo;
+  const jwt = parseJwt(cookie.value)
+
+  if (Date.now() / 1000> jwt.exp) {
+    throw new Error("Not authed");
+  }
+
+  return jwt.UserInfo;
 }
 
 function updateUserInfo(userInfo) {
   window.userInfo = userInfo;
   const name = userInfo.name;
   const profileUrl = userInfo.picture;
+  const isEboard = userInfo.is_eboard;
   document.getElementById("profile-pic").src = profileUrl;
   document.getElementById("profile-name").innerText = name;
+
+  if (!isEboard) {
+    document.querySelector("input.discussion-title").setAttribute("disabled", "true");
+  }
 }
 
 function getListNodeForQueueEntry(queueEntry) {
@@ -146,6 +170,11 @@ function removeEntryFromQueue(id, dismisser) {
   console.log(`${dismisser} dismissed point ${id}`);
 }
 
+function setTopic(topic) {
+  console.log("new topic", topic)
+  document.querySelector("input.discussion-title").value = topic;
+}
+
 async function rebuildQueue() {
   let queue = await getQueue();
 
@@ -161,12 +190,14 @@ async function rebuildQueue() {
   queue.points.forEach((queueEntry) => {
     addEntryToQueue('point', queueEntry);
   })
+
+  setTopic(queue.topic);
 }
 
 async function main() {
   try {
-  userInfo = await getUserInfo();
-  updateUserInfo(userInfo);
+    userInfo = await getUserInfo();
+    updateUserInfo(userInfo);
   } catch {
     window.location.replace(window.location.origin + "/auth")
   }
