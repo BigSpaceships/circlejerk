@@ -60,14 +60,45 @@
       </div>
       <div class="card-footer mb-0 d-flex justify-content-center">
         <div class="mx-auto">
-          <button class="btn btn-primary mx-3" onclick="enterQueue('clarifier')">Clarifier</button>
-          <button class="btn btn-primary mx-3" onclick="enterQueue('point')">New Point</button>
+          <button class="btn btn-lg btn-primary mx-3" onclick="enterQueue('clarifier')">Clarifier</button>
+          <button class="btn btn-lg btn-primary mx-3" onclick="enterQueue('point')">New Point</button>
         </div>
       </div>
     </div>
 
   </div>
 
+  <script>
+    const themeIndicator = document.getElementById("theme-indicator");
+    const prefersDarkScheme = window.matchMedia('(prefers-color-scheme: dark)');
+    if (prefersDarkScheme.matches) {
+      document.body.classList.add('dark-theme');
+      themeIndicator.innerHTML = '<span class="material-icons-outlined">dark_mode</span>';
+    } else {
+      document.body.classList.remove('dark-theme');
+      themeIndicator.innerHTML = '<span class="material-icons-outlined">light_mode</span>';
+    }
+
+    themeIndicator.onclick = function () {
+      if (themeIndicator.firstChild.innerHTML == "dark_mode") {
+        document.body.classList.remove('dark-theme');
+        themeIndicator.innerHTML = '<span class="material-icons-outlined">light_mode</span>';
+      } else {
+        document.body.classList.add('dark-theme');
+        themeIndicator.innerHTML = '<span class="material-icons-outlined">dark_mode</span>';
+      }
+    }
+  </script>
+
+  <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"
+    integrity="sha384-DfXdz2htPH0lsSSs5nCTpuj/zy4C+OGpamoFVy38MVBnE+IbbVYUew+OrCXaRkfj"
+    crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.1/dist/umd/popper.min.js"
+    integrity="sha384-9/reFTGAW83EW2RDu2S0VKaIzap3H66lZH81PoYlFhbGU+6BZp6G7niu735Sk7lN"
+    crossorigin="anonymous"></script>
+  <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"
+    integrity="sha384-B4gt1jrGC7Jh4AgTPSdUtOBvfO8shuf57BaghqFfPlYxofvL8/KUEfYiJOMMV+rV"
+    crossorigin="anonymous"></script>
   <script src="javascript/index.js"></script>
 </body>
 
