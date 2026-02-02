@@ -17,6 +17,10 @@
       font-weight: inherit;
     }
 
+    #theme-indicator>* {
+      font-size: 2em;
+    }
+
     .mh-0 {
       min-height: 0px;
     }
@@ -34,6 +38,7 @@
           <a href="/auth/logout" class="text-muted"><i>(logout)</i></a>
         </div>
       </div>
+      <div id="theme-indicator" class="mx-2 d-flex align-items-center justify-content-center" style="width: 32px; height: 32px"></div>
     </div>
   </nav>
 
@@ -73,19 +78,19 @@
     const prefersDarkScheme = window.matchMedia('(prefers-color-scheme: dark)');
     if (prefersDarkScheme.matches) {
       document.body.classList.add('dark-theme');
-      themeIndicator.innerHTML = '<span class="material-icons-outlined">dark_mode</span>';
+      themeIndicator.innerHTML = '<i class="fa-regular fa-moon"></i>';
     } else {
       document.body.classList.remove('dark-theme');
-      themeIndicator.innerHTML = '<span class="material-icons-outlined">light_mode</span>';
+      themeIndicator.innerHTML = '<i class="fa-regular fa-sun"></i>';
     }
 
     themeIndicator.onclick = function () {
-      if (themeIndicator.firstChild.innerHTML == "dark_mode") {
+      if (document.body.classList.contains('dark-theme')) {
         document.body.classList.remove('dark-theme');
-        themeIndicator.innerHTML = '<span class="material-icons-outlined">light_mode</span>';
+        themeIndicator.innerHTML = '<i class="fa-regular fa-sun"></i>';
       } else {
         document.body.classList.add('dark-theme');
-        themeIndicator.innerHTML = '<span class="material-icons-outlined">dark_mode</span>';
+        themeIndicator.innerHTML = '<i class="fa-regular fa-moon"></i>';
       }
     }
   </script>
